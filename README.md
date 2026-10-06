@@ -34,6 +34,12 @@ question and its solution can be opened inline: the page renders that region of
 the source PDF with pdf.js. It is published as a claude.ai artifact, with the four
 PDFs alongside it under `pdf/`, and saves progress there.
 
+## Download
+
+**[Download PSAT-Tracker.zip](https://github.com/erictfree/PSAT/raw/claude/cool-dirac-0uv0z2/download/PSAT-Tracker.zip)**
+(about 37 MB). Unzip it, then double-click `PSAT-Tracker/index.html`. No account,
+install or internet connection needed; progress saves in that browser.
+
 ## Offline folder
 
 `python3 tools/build_tracker.py --site _site` builds a folder that works from disk
