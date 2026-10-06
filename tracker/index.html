@@ -203,6 +203,8 @@ $("list").addEventListener("click", async e => {
   if (e.target.id === "more") { limit += 60; render(); return }
   const v = e.target.closest("[data-view]");
   if (v) { const n = +v.dataset.view; views.has(n) ? views.delete(n) : views.set(n, buildView(Q.find(x => x.n === n))); render(); return }
+  const lk = e.target.closest("[data-pdf]");
+  if (lk && STORE === "local") { e.preventDefault(); openPdf(Q.find(x => x.n === +lk.dataset.pdf)); return }
   const sb = e.target.closest("[data-sol]");
   if (sb) { toggleSolution(sb); return }
   const a = e.target.closest("[data-ans]");
@@ -243,10 +245,38 @@ async function save(n, next, quiet) {
 // ---- Question viewer: renders the question's region straight from the source PDF ----
 const PAGE_W = 594.96, PAGE_H = 841.92, TOP = 4;
 const docs = {}, pageCache = new Map();
+// The offline folder opens from disk (file://), where a page can't fetch files next
+// to it, so each PDF ships as pdf/partN.js, which sets PSAT_PDF[N] to its base64 bytes.
+const pdfBytes = {};
+function loadPdfBytes(part) {
+  return pdfBytes[part] ||= new Promise((resolve, reject) => {
+    const tag = document.createElement("script");
+    tag.src = `pdf/part${part}.js`;
+    tag.onload = () => {
+      const b64 = window.PSAT_PDF?.[part];
+      if (!b64) return reject(new Error("PDF data missing"));
+      const bin = atob(b64), out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      delete window.PSAT_PDF[part];
+      resolve(out);
+    };
+    tag.onerror = () => reject(new Error("PDF data didn't load"));
+    document.head.appendChild(tag);
+  }).catch(err => { delete pdfBytes[part]; throw err });
+}
 function pdfDoc(part) {
   if (!window.pdfjsLib) return Promise.reject(new Error("viewer library didn't load"));
-  return docs[part] ||= pdfjsLib.getDocument({ url: "pdf/" + PDF[part], disableAutoFetch: true, disableFontFace: true }).promise
+  const opts = { disableAutoFetch: true, disableFontFace: true };
+  return docs[part] ||= (STORE === "local"
+    ? loadPdfBytes(part).then(bytes => pdfjsLib.getDocument({ ...opts, data: bytes.slice() }).promise)
+    : pdfjsLib.getDocument({ ...opts, url: "pdf/" + PDF[part] }).promise)
     .catch(err => { delete docs[part]; throw err });
+}
+async function openPdf(q) {
+  if (STORE !== "local") return false;
+  const url = URL.createObjectURL(new Blob([await loadPdfBytes(q.part)], { type: "application/pdf" }));
+  window.open(url + "#page=" + q.page, "_blank");
+  return true;
 }
 async function pageBitmap(part, num, scale) {
   const key = part + ":" + num + ":" + scale;
@@ -293,7 +323,7 @@ function buildView(q) {
   const el = document.createElement("div");
   el.className = "view";
   el.innerHTML = `<div class="vbar"><button class="btn" data-sol="${q.n}">Show solution</button>
-    <a href="pdf/${PDF[q.part]}#page=${q.page}" target="_blank" rel="noopener">Open in PDF, page ${q.page}</a></div>
+    <a href="pdf/${PDF[q.part]}#page=${q.page}" target="_blank" rel="noopener" data-pdf="${q.n}">Open in PDF, page ${q.page}</a></div>
     <div class="sheet q"></div><div class="sheet s" hidden></div>`;
   requestAnimationFrame(() => drawInto(el.querySelector(".sheet.q"), q.part, slices(q.part, q.page, q.qy, q.ap, q.ay)));
   return el;

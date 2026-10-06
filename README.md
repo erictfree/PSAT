@@ -34,20 +34,17 @@ question and its solution can be opened inline: the page renders that region of
 the source PDF with pdf.js. It is published as a claude.ai artifact, with the four
 PDFs alongside it under `pdf/`, and saves progress there.
 
-## Website
+## Offline folder
 
-`.github/workflows/pages.yml` builds a standalone copy of the tracker and publishes
-it with GitHub Pages on every push to `main`, at
-https://erictfree.github.io/PSAT/. Anyone can open it without an account. Each
-visitor's marks and notes are saved in their own browser, so they stay on that
-device and aren't shared.
-
-One-time setup: in the repo's Settings → Pages, set Source to "GitHub Actions".
+`python3 tools/build_tracker.py --site _site` builds a folder that works from disk
+with no internet: double-click `_site/index.html`. It bundles pdf.js
+(`tracker/vendor/`) and carries each PDF as `pdf/partN.js`, because a page opened
+from disk can't fetch the files next to it. Progress is saved in that browser.
 
 ## Regenerating
 
 ```sh
 python3 tools/index_pdfs.py     # PDFs -> questions.csv (needs PyMuPDF: pip install pymupdf)
 python3 tools/build_tracker.py  # questions.csv + tracker/template.html -> tracker/index.html
-python3 tools/build_tracker.py --site _site  # also build the website into _site/
+python3 tools/build_tracker.py --site _site  # also build the offline folder into _site/
 ```
