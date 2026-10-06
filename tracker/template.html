@@ -1,0 +1,417 @@
+<title>PSAT Math Question Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: answer-sheet ledger. Summary strip of domain meters, a filter bar, then a dense list of question rows with bubble-style status marks. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #18202c; --muted: #5d6878; --line: #d9dee6;
+  --accent: #1f4fd1; --accent-ink: #ffffff; --pencil: #f2c230;
+  --ok: #1d8a4e; --miss: #c8382b; --flag: #b9770e;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151c; --surface: #1a2029; --ink: #e7ebf1; --muted: #9aa5b5; --line: #2d3542;
+  --accent: #7fa2ff; --accent-ink: #0d1424; --pencil: #e0b42a;
+  --ok: #4cc283; --miss: #f0786c; --flag: #e3a64a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #1a2029; --ink: #e7ebf1; --muted: #9aa5b5; --line: #2d3542;
+  --accent: #7fa2ff; --accent-ink: #0d1424; --pencil: #e0b42a;
+  --ok: #4cc283; --miss: #f0786c; --flag: #e3a64a; color-scheme: dark }
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--body); margin: 0 }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px }
+h1 { font: 800 clamp(26px, 4vw, 36px)/1.05 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.sub { color: var(--muted); margin: 4px 0 0 }
+.total { display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums }
+.total b { font: 800 34px/1 var(--display) }
+.total span { color: var(--muted) }
+.bar { height: 8px; border-radius: 4px; background: var(--line); display: flex; overflow: hidden }
+.bar i { display: block; height: 100% }
+.bar .c { background: var(--ok) } .bar .m { background: var(--miss) } .bar .f { background: var(--flag) }
+.domains { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px }
+.dom { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 8px; cursor: pointer; text-align: left; font: inherit; color: inherit }
+.dom:hover { border-color: var(--accent) }
+.dom[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.dom h2 { font: 600 16px/1.2 var(--display); margin: 0 }
+.dom .nums { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg); padding-block: 8px }
+select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; max-width: 100% }
+#skill { flex: 1 1 260px }
+#q { flex: 1 1 160px }
+.count { color: var(--muted); font-size: 13px; margin-left: auto; font-variant-numeric: tabular-nums }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 13px }
+.legend span { display: inline-flex; gap: 6px; align-items: center }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+.row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 4px 14px; padding: 10px 14px; border-top: 1px solid var(--line); align-items: center }
+.row:first-child { border-top: 0 }
+.num { font: 600 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.meta { min-width: 0; display: grid; gap: 2px }
+.meta .skill { overflow-wrap: anywhere }
+.meta small { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 12px }
+.meta code { font: 12.5px var(--mono) }
+.diff { font-weight: 700 }
+.diff.E { color: var(--ok) } .diff.M { color: var(--flag) } .diff.H { color: var(--miss) }
+.ans { background: none; border: 0; padding: 0; font: inherit; font-size: 12.5px; color: var(--accent); cursor: pointer; text-decoration: underline dotted }
+.ans.shown { color: var(--ink); text-decoration: none; font-family: var(--mono) }
+.marks { display: flex; gap: 6px }
+.mk { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font: 700 13px var(--body); cursor: pointer; display: grid; place-items: center; padding: 0 }
+.mk:hover { border-color: var(--ink) }
+.mk:disabled { cursor: default; opacity: .5 }
+.mk.on.c { background: var(--ok); border-color: var(--ok); color: var(--accent-ink) }
+.mk.on.m { background: var(--miss); border-color: var(--miss); color: var(--accent-ink) }
+.mk.on.f { background: var(--flag); border-color: var(--flag); color: var(--accent-ink) }
+.view { grid-column: 1 / -1; display: grid; gap: 10px; padding-block: 6px 4px }
+.sheet { background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: grid; max-width: 760px }
+.sheet canvas { display: block; width: 100%; height: auto }
+.sheet .msg { color: #5d6878; font-size: 13.5px; padding: 14px }
+.vbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px }
+.vbar a { color: var(--accent) }
+.btn { font: 700 13px var(--body); color: var(--accent); background: var(--surface); border: 1px solid var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer }
+.btn.on { background: var(--accent); color: var(--accent-ink) }
+.note { grid-column: 2 / -1; display: flex; gap: 8px }
+.note input { flex: 1; min-width: 0; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px }
+.notebtn { background: none; border: 0; color: var(--muted); font-size: 12.5px; cursor: pointer; padding: 0; text-decoration: underline dotted }
+.more { display: block; width: 100%; padding: 12px; border: 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--accent); font: 700 14px var(--body); cursor: pointer }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted) }
+.status { font-size: 13px; color: var(--muted) }
+.status.warn { color: var(--miss) }
+.gate { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding-inline: 16px }
+.gate form { display: grid; gap: 12px; width: min(340px, 100%) }
+.gate h1 { font-size: 26px }
+.gate input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px }
+.gate button { font: 700 15px var(--body); color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 8px; padding: 10px 12px; cursor: pointer }
+.gate .err { color: var(--miss); font-size: 13.5px; min-height: 1.2em; margin: 0 }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+@media (max-width: 560px) {
+  .row { grid-template-columns: 44px minmax(0, 1fr) }
+  .marks { grid-column: 2 }
+}
+</style>
+
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <h1>PSAT Math Question Bank</h1>
+    <input id="gatePw" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password">
+    <button type="submit">Open</button>
+    <p class="err" id="gateErr"></p>
+  </form>
+</div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>PSAT Math Question Bank</h1>
+      <p class="sub">1,366 questions across four PDFs. Open any question, work it, then mark it.</p>
+    </div>
+    <div style="display:grid;gap:6px;min-width:220px">
+      <div class="total"><b id="doneN">0</b><span id="doneOf">of 1,366 done</span></div>
+      <div class="bar" id="totalBar"></div>
+    </div>
+  </header>
+
+  <div class="domains" id="domains"></div>
+
+  <div class="filters">
+    <select id="skill" aria-label="Skill"></select>
+    <select id="diff" aria-label="Difficulty">
+      <option value="">All difficulties</option><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option>
+    </select>
+    <select id="stat" aria-label="Status">
+      <option value="">Any status</option><option value="todo">Not done</option><option value="c">Correct</option><option value="m">Missed</option><option value="f">Flagged</option>
+    </select>
+    <input id="q" type="search" placeholder="Question # or ID" aria-label="Find question">
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="legend">
+    <span><span class="mk on c" style="width:18px;height:18px;font-size:10px">✓</span> Correct</span>
+    <span><span class="mk on m" style="width:18px;height:18px;font-size:10px">✕</span> Missed</span>
+    <span><span class="mk on f" style="width:18px;height:18px;font-size:10px">!</span> Flag to review</span>
+    <span>Click a lit mark again to clear it.</span>
+    <span class="status" id="sync">Connecting…</span>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" charset="utf-8"></script>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const DIFF = ["Easy", "Medium", "Hard"];
+const PDF = ["", "PSAT_Math_Part1_q1-350.pdf", "PSAT_Math_Part2_q351-700.pdf", "PSAT_Math_Part3_q701-1050.pdf", "PSAT_Math_Part4_q1051-1366.pdf"];
+const Q = D.q.map(([n, id, s, d, a, part, page, qy, ap, ay, ep, ey]) => ({ n, id, s, dom: D.skills[s][0], d, a, part, page, qy, ap, ay, ep, ey }));
+const P = {};            // n -> {st, note}
+const shownAns = new Set(), openNotes = new Set(), views = new Map();
+let db = null, canWrite = true, dom = -1, limit = 60;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Filter controls
+$("skill").innerHTML = '<option value="">All skills</option>' + D.domains.map((dn, di) =>
+  `<optgroup label="${esc(dn)}">` + D.skills.map(([d, s], si) => d === di ? `<option value="${si}">${esc(s)}</option>` : "").join("") + "</optgroup>").join("");
+for (const id of ["skill", "diff", "stat"]) $(id).addEventListener("change", () => { limit = 60; render() });
+$("q").addEventListener("input", () => { limit = 60; render() });
+
+function barHTML(qs) {
+  const t = qs.length || 1, c = k => qs.filter(q => P[q.n]?.st === k).length;
+  return `<i class="c" style="width:${c("c") / t * 100}%"></i><i class="m" style="width:${c("m") / t * 100}%"></i><i class="f" style="width:${c("f") / t * 100}%"></i>`;
+}
+
+function renderSummary() {
+  const done = Q.filter(q => P[q.n]?.st).length;
+  $("doneN").textContent = done.toLocaleString();
+  $("totalBar").innerHTML = barHTML(Q);
+  $("domains").innerHTML = D.domains.map((dn, di) => {
+    const qs = Q.filter(q => q.dom === di), d = qs.filter(q => P[q.n]?.st).length;
+    const miss = qs.filter(q => P[q.n]?.st === "m").length;
+    return `<button class="dom" data-dom="${di}" aria-pressed="${dom === di}"><h2>${esc(dn)}</h2>
+      <div class="bar">${barHTML(qs)}</div>
+      <div class="nums"><span>${d} / ${qs.length} done</span><span>${miss} missed</span></div></button>`;
+  }).join("");
+}
+$("domains").addEventListener("click", e => {
+  const b = e.target.closest(".dom"); if (!b) return;
+  const di = +b.dataset.dom; dom = dom === di ? -1 : di; limit = 60;
+  if (dom >= 0 && $("skill").value !== "" && D.skills[+$("skill").value][0] !== dom) $("skill").value = "";
+  render();
+});
+
+function filtered() {
+  const sk = $("skill").value, df = $("diff").value, st = $("stat").value, t = $("q").value.trim().toLowerCase();
+  return Q.filter(q => (dom < 0 || q.dom === dom) && (sk === "" || q.s === +sk) && (df === "" || q.d === +df)
+    && (st === "" || (st === "todo" ? !P[q.n]?.st : P[q.n]?.st === st))
+    && (!t || String(q.n) === t || q.id.startsWith(t)));
+}
+
+function rowHTML(q) {
+  const p = P[q.n] || {}, dis = canWrite ? "" : " disabled";
+  const mk = (k, ch, lbl) => `<button class="mk ${k}${p.st === k ? " on" : ""}" data-n="${q.n}" data-k="${k}" aria-pressed="${p.st === k}" aria-label="${lbl}" title="${lbl}"${dis}>${ch}</button>`;
+  const ans = shownAns.has(q.n) ? `<button class="ans shown" data-ans="${q.n}">Answer: ${esc(q.a)}</button>` : `<button class="ans" data-ans="${q.n}">Show answer</button>`;
+  const noteOpen = openNotes.has(q.n) || p.note;
+  const open = views.has(q.n);
+  return `<div class="row"><span class="num">#${q.n}</span>
+    <div class="meta"><span class="skill">${esc(D.skills[q.s][1])}</span>
+      <small><span class="diff ${"EMH"[q.d]}">${DIFF[q.d]}</span><code>${q.id}</code><span title="${PDF[q.part]}">Part ${q.part}, p. ${q.page}</span><button class="ans" data-view="${q.n}">${open ? "Hide question" : "Show question"}</button>${ans}
+      ${noteOpen || !canWrite ? "" : `<button class="notebtn" data-note="${q.n}">Add note</button>`}</small></div>
+    ${open ? `<div class="view" data-slot="${q.n}"></div>` : ""}
+    <div class="marks">${mk("c", "✓", "Correct")}${mk("m", "✕", "Missed")}${mk("f", "!", "Flag to review")}</div>
+    ${noteOpen ? `<div class="note"><input id="note-${q.n}" data-n="${q.n}" value="${esc(p.note || "")}" placeholder="What tripped you up?" aria-label="Note for question ${q.n}"${canWrite ? "" : " readonly"}></div>` : ""}
+  </div>`;
+}
+
+function render() {
+  renderSummary();
+  const qs = filtered();
+  $("count").textContent = `${qs.length.toLocaleString()} question${qs.length === 1 ? "" : "s"}`;
+  $("list").innerHTML = qs.length
+    ? qs.slice(0, limit).map(rowHTML).join("") + (qs.length > limit ? `<button class="more" id="more">Show ${Math.min(60, qs.length - limit)} more of ${(qs.length - limit).toLocaleString()} remaining</button>` : "")
+    : `<div class="empty">No questions match these filters.</div>`;
+  for (const slot of $("list").querySelectorAll("[data-slot]")) slot.replaceWith(views.get(+slot.dataset.slot));
+}
+
+$("list").addEventListener("click", async e => {
+  if (e.target.id === "more") { limit += 60; render(); return }
+  const v = e.target.closest("[data-view]");
+  if (v) { const n = +v.dataset.view; views.has(n) ? views.delete(n) : views.set(n, buildView(Q.find(x => x.n === n))); render(); return }
+  const lk = e.target.closest("[data-pdf]");
+  if (lk && STORE === "local") { e.preventDefault(); openPdf(Q.find(x => x.n === +lk.dataset.pdf)); return }
+  const sb = e.target.closest("[data-sol]");
+  if (sb) { toggleSolution(sb); return }
+  const a = e.target.closest("[data-ans]");
+  if (a) { const n = +a.dataset.ans; shownAns.has(n) ? shownAns.delete(n) : shownAns.add(n); render(); return }
+  const nb = e.target.closest("[data-note]");
+  if (nb) { const n = +nb.dataset.note; openNotes.add(n); render(); $("note-" + n)?.focus(); return }
+  const m = e.target.closest(".mk"); if (!m || !canWrite) return;
+  const n = +m.dataset.n, k = m.dataset.k, cur = P[n] || {};
+  save(n, { st: cur.st === k ? "" : k, note: cur.note || "" });
+});
+
+const noteTimers = {};
+$("list").addEventListener("input", e => {
+  const n = +e.target.dataset.n; if (!n) return;
+  clearTimeout(noteTimers[n]);
+  noteTimers[n] = setTimeout(() => save(n, { st: P[n]?.st || "", note: e.target.value.trim() }, true), 700);
+});
+
+const writing = {};
+async function save(n, next, quiet) {
+  const prev = P[n];
+  P[n] = next; if (!quiet) render(); else renderSummary();
+  if (STORE === "local") { saveLocal(); return }
+  if (!db) { setSync("Not connected — this mark won't be saved.", true); return }
+  while (writing[n]) await writing[n];
+  const q = Q.find(x => x.n === n);
+  const ref = db.collection("progress").doc("q" + n);
+  writing[n] = (next.st || next.note
+    ? ref.set({ n, id: q.id, status: next.st, note: next.note, at: new Date().toISOString() })
+    : ref.delete()).then(() => setSync("Saved"), err => {
+      if (err?.code === "invalid_argument") { canWrite = false; setSync("You can view this tracker but not change it.", true) }
+      else setSync("Couldn't save — try again in a moment.", true);
+      P[n] = prev; render();
+    }).finally(() => { writing[n] = null });
+  await writing[n];
+}
+
+// ---- Question viewer: renders the question's region straight from the source PDF ----
+const PAGE_W = 594.96, PAGE_H = 841.92, TOP = 4;
+const docs = {}, pageCache = new Map();
+// The offline folder opens from disk (file://), where a page can't fetch files next
+// to it, so each PDF ships as pdf/partN.js, which sets PSAT_PDF[N] to its base64 bytes.
+const pdfBytes = {};
+function loadPdfBytes(part) {
+  return pdfBytes[part] ||= new Promise((resolve, reject) => {
+    const tag = document.createElement("script");
+    tag.src = `pdf/part${part}.js`;
+    tag.onload = () => {
+      const b64 = window.PSAT_PDF?.[part];
+      if (!b64) return reject(new Error("PDF data missing"));
+      const bin = atob(b64), out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      delete window.PSAT_PDF[part];
+      resolve(out);
+    };
+    tag.onerror = () => reject(new Error("PDF data didn't load"));
+    document.head.appendChild(tag);
+  }).catch(err => { delete pdfBytes[part]; throw err });
+}
+function pdfDoc(part) {
+  if (!window.pdfjsLib) return Promise.reject(new Error("viewer library didn't load"));
+  const opts = { disableAutoFetch: true, disableFontFace: true };
+  return docs[part] ||= (STORE === "local"
+    ? loadPdfBytes(part).then(bytes => pdfjsLib.getDocument({ ...opts, data: bytes.slice() }).promise)
+    : pdfjsLib.getDocument({ ...opts, url: "pdf/" + PDF[part] }).promise)
+    .catch(err => { delete docs[part]; throw err });
+}
+async function openPdf(q) {
+  if (STORE !== "local") return false;
+  const url = URL.createObjectURL(new Blob([await loadPdfBytes(q.part)], { type: "application/pdf" }));
+  window.open(url + "#page=" + q.page, "_blank");
+  return true;
+}
+async function pageBitmap(part, num, scale) {
+  const key = part + ":" + num + ":" + scale;
+  if (!pageCache.has(key)) {
+    pageCache.set(key, (async () => {
+      const page = await (await pdfDoc(part)).getPage(num);
+      const vp = page.getViewport({ scale });
+      const c = document.createElement("canvas");
+      c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+      return c;
+    })().catch(err => { pageCache.delete(key); throw err }));
+    if (pageCache.size > 24) pageCache.delete(pageCache.keys().next().value);
+  }
+  return pageCache.get(key);
+}
+// Slices between (p0, y0) and (p1, y1); continuation pages start at the top.
+function slices(part, p0, y0, p1, y1) {
+  const out = [];
+  for (let p = p0; p <= p1; p++) {
+    const a = p === p0 ? y0 : TOP, b = p === p1 ? y1 : PAGE_H;
+    if (b - a > 4) out.push([p, a, b]);
+  }
+  return out;
+}
+async function drawInto(sheet, part, segs) {
+  sheet.innerHTML = '<div class="msg">Loading from the PDF…</div>';
+  try {
+    const css = Math.min(sheet.clientWidth || 700, 760), scale = Math.min(3, css * (window.devicePixelRatio || 1) / PAGE_W);
+    const canvases = [];
+    for (const [p, a, b] of segs) {
+      const src = await pageBitmap(part, p, scale);
+      const c = document.createElement("canvas");
+      c.width = src.width; c.height = Math.max(1, Math.round((b - a) * scale));
+      c.getContext("2d").drawImage(src, 0, Math.round(a * scale), src.width, c.height, 0, 0, c.width, c.height);
+      canvases.push(c);
+    }
+    sheet.replaceChildren(...canvases);
+  } catch (err) {
+    sheet.innerHTML = STORE === "local"
+      ? `<div class="msg">Couldn't find pdf/part${part}.js. Put it in the pdf folder next to index.html, then reload.</div>`
+      : '<div class="msg">Couldn\'t load this page from the PDF. Use the link above to open it directly.</div>';
+  }
+}
+function buildView(q) {
+  const el = document.createElement("div");
+  el.className = "view";
+  el.innerHTML = `<div class="vbar"><button class="btn" data-sol="${q.n}">Show solution</button>
+    <a href="pdf/${PDF[q.part]}#page=${q.page}" target="_blank" rel="noopener" data-pdf="${q.n}">Open in PDF, page ${q.page}</a></div>
+    <div class="sheet q"></div><div class="sheet s" hidden></div>`;
+  requestAnimationFrame(() => drawInto(el.querySelector(".sheet.q"), q.part, slices(q.part, q.page, q.qy, q.ap, q.ay)));
+  return el;
+}
+function toggleSolution(btn) {
+  const q = Q.find(x => x.n === +btn.dataset.sol), sheet = btn.closest(".view").querySelector(".sheet.s");
+  const show = sheet.hidden;
+  sheet.hidden = !show; btn.classList.toggle("on", show); btn.textContent = show ? "Hide solution" : "Show solution";
+  if (show && !sheet.dataset.drawn) { sheet.dataset.drawn = 1; drawInto(sheet, q.part, slices(q.part, q.ap, q.ay, q.ep, q.ey)) }
+}
+
+function setSync(t, warn) { const s = $("sync"); s.textContent = t; s.classList.toggle("warn", !!warn) }
+
+render();
+
+// "local" builds (the public website) keep each visitor's progress in their own browser.
+const STORE = "__STORE__", LOCAL_KEY = "psat-math-progress-v1";
+function saveLocal() {
+  const out = {};
+  for (const [n, v] of Object.entries(P)) if (v && (v.st || v.note)) out[n] = v;
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(out)); setSync("Saved on this device") }
+  catch { setSync("This browser isn't letting the page save. Progress will be lost when you close it.", true) }
+}
+// Optional password screen for the hosted copy. It only keeps casual visitors out:
+// the page compares a SHA-256 hash, and the files themselves aren't protected.
+const PASS_HASH = "__PASS_HASH__", PASS_KEY = "psat-math-unlocked";
+async function sha256(t) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+if (PASS_HASH && !PASS_HASH.startsWith("__")) {
+  let ok = false;
+  try { ok = localStorage.getItem(PASS_KEY) === PASS_HASH } catch {}
+  if (!ok) {
+    $("gate").hidden = false; $("gatePw").focus();
+    $("gateForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      if (await sha256($("gatePw").value.trim()) === PASS_HASH) {
+        try { localStorage.setItem(PASS_KEY, PASS_HASH) } catch {}
+        $("gate").hidden = true;
+      } else { $("gateErr").textContent = "That password isn't right."; $("gatePw").select() }
+    });
+  }
+}
+
+if (STORE === "local") {
+  try { Object.assign(P, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")) } catch {}
+  setSync("Progress saves on this device and browser.");
+  render();
+} else (async () => {
+  const [d, u] = window.claude ? await Promise.all([claude.use("db"), claude.use("user")]) : [null, null];
+  if (!d) { setSync("Progress can't load here. Open the tracker on claude.ai while signed in.", true); return }
+  db = d;
+  if (u) { const w = await u.can("data.write"); if (w === false) { canWrite = false; render() } }
+  const seen = [new Map(), new Map()];
+  const apply = () => {
+    for (const k of Object.keys(P)) delete P[k];
+    for (const m of seen) for (const [n, v] of m) P[n] = v;
+    render();
+  };
+  const sub = (i, q) => q.onSnapshot(snap => {
+    const m = new Map();
+    for (const doc of snap.docs) { const v = doc.data(); if (v && v.n) m.set(v.n, { st: v.status || "", note: v.note || "" }) }
+    seen[i] = m;
+    const active = document.activeElement;
+    if (active && active.matches(".note input")) { for (const [n, v] of m) if (n !== +active.dataset.n) P[n] = v; renderSummary() }
+    else apply();
+    setSync(canWrite ? "Synced" : "View only", !canWrite);
+  }, err => setSync("Lost connection to saved progress. Reload to reconnect.", true));
+  const col = db.collection("progress");
+  sub(0, col.where("n", "<=", 700).limit(1000));
+  sub(1, col.where("n", ">", 700).limit(1000));
+})();
+</script>
