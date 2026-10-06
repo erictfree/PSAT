@@ -316,7 +316,9 @@ async function drawInto(sheet, part, segs) {
     }
     sheet.replaceChildren(...canvases);
   } catch (err) {
-    sheet.innerHTML = '<div class="msg">Couldn\'t load this page from the PDF. Use the link above to open it directly.</div>';
+    sheet.innerHTML = STORE === "local"
+      ? `<div class="msg">Couldn't find pdf/part${part}.js. Put it in the pdf folder next to index.html, then reload.</div>`
+      : '<div class="msg">Couldn\'t load this page from the PDF. Use the link above to open it directly.</div>';
   }
 }
 function buildView(q) {

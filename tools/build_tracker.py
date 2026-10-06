@@ -12,6 +12,8 @@ README_TXT = """PSAT Math Question Bank — offline tracker
 Open index.html in Chrome, Edge, Firefox or Safari (double-click it).
 No internet connection or install is needed.
 
+- If a question says part3.js or part4.js is missing, copy those files into the
+  pdf folder here (they come in a second download).
 - Click "Show question" on any row to see it; "Show solution" shows the answer and explanation.
 - Mark each question correct, missed, or flagged. Add notes if you like.
 - Progress is saved in the browser you use, on this computer. Keep this folder in
