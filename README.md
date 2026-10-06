@@ -34,11 +34,15 @@ question and its solution can be opened inline: the page renders that region of
 the source PDF with pdf.js. It is published as a claude.ai artifact, with the four
 PDFs alongside it under `pdf/`, and saves progress there.
 
-## Download
+## Website
 
-**[Download PSAT-Tracker.zip](https://github.com/erictfree/PSAT/raw/claude/cool-dirac-0uv0z2/download/PSAT-Tracker.zip)**
-(about 37 MB). Unzip it, then double-click `PSAT-Tracker/index.html`. No account,
-install or internet connection needed; progress saves in that browser.
+`.github/workflows/pages.yml` publishes the tracker with GitHub Pages at
+https://erictfree.github.io/PSAT/ whenever `main` changes. Visitors enter a
+password (default `psat`; set a repository variable `SITE_PASSWORD` to change it)
+and then each person's progress saves in their own browser. The password only
+keeps casual visitors out: the files themselves are still public.
+
+One-time setup: Settings → Pages → Source: "GitHub Actions".
 
 ## Offline folder
 

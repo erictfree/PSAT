@@ -20,6 +20,7 @@
   --accent: #7fa2ff; --accent-ink: #0d1424; --pencil: #e0b42a;
   --ok: #4cc283; --miss: #f0786c; --flag: #e3a64a; color-scheme: dark }
 * { box-sizing: border-box }
+[hidden] { display: none !important }
 body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--body); margin: 0 }
 .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px }
 header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px }
@@ -78,6 +79,12 @@ select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); 
 .empty { padding: 28px 16px; text-align: center; color: var(--muted) }
 .status { font-size: 13px; color: var(--muted) }
 .status.warn { color: var(--miss) }
+.gate { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding-inline: 16px }
+.gate form { display: grid; gap: 12px; width: min(340px, 100%) }
+.gate h1 { font-size: 26px }
+.gate input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px }
+.gate button { font: 700 15px var(--body); color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 8px; padding: 10px 12px; cursor: pointer }
+.gate .err { color: var(--miss); font-size: 13.5px; min-height: 1.2em; margin: 0 }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 @media (max-width: 560px) {
   .row { grid-template-columns: 44px minmax(0, 1fr) }
@@ -85,6 +92,14 @@ select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); 
 }
 </style>
 
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <h1>PSAT Math Question Bank</h1>
+    <input id="gatePw" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password">
+    <button type="submit">Open</button>
+    <p class="err" id="gateErr"></p>
+  </form>
+</div>
 <div class="wrap">
   <header>
     <div>
@@ -349,6 +364,28 @@ function saveLocal() {
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify(out)); setSync("Saved on this device") }
   catch { setSync("This browser isn't letting the page save. Progress will be lost when you close it.", true) }
 }
+// Optional password screen for the hosted copy. It only keeps casual visitors out:
+// the page compares a SHA-256 hash, and the files themselves aren't protected.
+const PASS_HASH = "__PASS_HASH__", PASS_KEY = "psat-math-unlocked";
+async function sha256(t) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+if (PASS_HASH && !PASS_HASH.startsWith("__")) {
+  let ok = false;
+  try { ok = localStorage.getItem(PASS_KEY) === PASS_HASH } catch {}
+  if (!ok) {
+    $("gate").hidden = false; $("gatePw").focus();
+    $("gateForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      if (await sha256($("gatePw").value.trim()) === PASS_HASH) {
+        try { localStorage.setItem(PASS_KEY, PASS_HASH) } catch {}
+        $("gate").hidden = true;
+      } else { $("gateErr").textContent = "That password isn't right."; $("gatePw").select() }
+    });
+  }
+}
+
 if (STORE === "local") {
   try { Object.assign(P, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")) } catch {}
   setSync("Progress saves on this device and browser.");

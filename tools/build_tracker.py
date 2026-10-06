@@ -1,11 +1,11 @@
 """Embed questions.csv into tracker/template.html.
 
 Writes tracker/index.html (the claude.ai artifact, which saves progress to the
-artifact's database) and, with --site DIR, an offline folder: open DIR/index.html straight from disk.
+artifact's database) and, with --site DIR [--password PW], an offline folder: open DIR/index.html straight from disk.
 It saves progress in that browser, and carries each PDF as DIR/pdf/partN.js
 because pages opened from disk can't fetch neighbouring files.
 """
-import base64, csv, glob, json, os, shutil, sys
+import base64, csv, glob, hashlib, json, os, shutil, sys
 
 README_TXT = """PSAT Math Question Bank — offline tracker
 
@@ -39,6 +39,10 @@ if "--site" in sys.argv:
     site = sys.argv[sys.argv.index("--site") + 1]
     os.makedirs(os.path.join(site, "pdf"), exist_ok=True)
     page = template.replace("__STORE__", "local")
+    # --password PW adds a password screen (used for the GitHub Pages copy).
+    if "--password" in sys.argv:
+        pw = sys.argv[sys.argv.index("--password") + 1].strip()
+        page = page.replace("__PASS_HASH__", hashlib.sha256(pw.encode()).hexdigest())
     # Use the bundled pdf.js so the folder works with no internet connection.
     os.makedirs(os.path.join(site, "lib"), exist_ok=True)
     for js in ["pdf.min.js", "pdf.worker.min.js"]:
