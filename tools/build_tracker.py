@@ -9,7 +9,8 @@ data = {
     "domains": domains,
     "skills": [[domains.index(d), s] for d, s in pairs],
     "q": [[int(r["n"]), r["id"], skills.index(r["skill"]), "EMH".index(r["difficulty"][0]),
-           r["answer"], int(r["part"]), int(r["page"])] for r in rows],
+           r["answer"], int(r["part"]), int(r["page"]), float(r["q_y"]),
+           int(r["ans_page"]), float(r["ans_y"]), int(r["end_page"]), float(r["end_y"])] for r in rows],
 }
 blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
 html = open("tracker/template.html").read().replace("__DATA__", blob)

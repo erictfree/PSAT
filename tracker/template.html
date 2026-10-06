@@ -63,6 +63,14 @@ select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); 
 .mk.on.c { background: var(--ok); border-color: var(--ok); color: var(--accent-ink) }
 .mk.on.m { background: var(--miss); border-color: var(--miss); color: var(--accent-ink) }
 .mk.on.f { background: var(--flag); border-color: var(--flag); color: var(--accent-ink) }
+.view { grid-column: 1 / -1; display: grid; gap: 10px; padding-block: 6px 4px }
+.sheet { background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: grid; max-width: 760px }
+.sheet canvas { display: block; width: 100%; height: auto }
+.sheet .msg { color: #5d6878; font-size: 13.5px; padding: 14px }
+.vbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px }
+.vbar a { color: var(--accent) }
+.btn { font: 700 13px var(--body); color: var(--accent); background: var(--surface); border: 1px solid var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer }
+.btn.on { background: var(--accent); color: var(--accent-ink) }
 .note { grid-column: 2 / -1; display: flex; gap: 8px }
 .note input { flex: 1; min-width: 0; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px }
 .notebtn { background: none; border: 0; color: var(--muted); font-size: 12.5px; cursor: pointer; padding: 0; text-decoration: underline dotted }
@@ -81,7 +89,7 @@ select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); 
   <header>
     <div>
       <h1>PSAT Math Question Bank</h1>
-      <p class="sub">1,366 questions across four PDFs. Mark each one as you work it.</p>
+      <p class="sub">1,366 questions across four PDFs. Open any question, work it, then mark it.</p>
     </div>
     <div style="display:grid;gap:6px;min-width:220px">
       <div class="total"><b id="doneN">0</b><span id="doneOf">of 1,366 done</span></div>
@@ -114,14 +122,16 @@ select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); 
   <div class="list" id="list"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" charset="utf-8"></script>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 const D = JSON.parse(document.getElementById("data").textContent);
 const DIFF = ["Easy", "Medium", "Hard"];
 const PDF = ["", "PSAT_Math_Part1_q1-350.pdf", "PSAT_Math_Part2_q351-700.pdf", "PSAT_Math_Part3_q701-1050.pdf", "PSAT_Math_Part4_q1051-1366.pdf"];
-const Q = D.q.map(([n, id, s, d, a, part, page]) => ({ n, id, s, dom: D.skills[s][0], d, a, part, page }));
+const Q = D.q.map(([n, id, s, d, a, part, page, qy, ap, ay, ep, ey]) => ({ n, id, s, dom: D.skills[s][0], d, a, part, page, qy, ap, ay, ep, ey }));
 const P = {};            // n -> {st, note}
-const shownAns = new Set(), openNotes = new Set();
+const shownAns = new Set(), openNotes = new Set(), views = new Map();
 let db = null, canWrite = true, dom = -1, limit = 60;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -168,10 +178,12 @@ function rowHTML(q) {
   const mk = (k, ch, lbl) => `<button class="mk ${k}${p.st === k ? " on" : ""}" data-n="${q.n}" data-k="${k}" aria-pressed="${p.st === k}" aria-label="${lbl}" title="${lbl}"${dis}>${ch}</button>`;
   const ans = shownAns.has(q.n) ? `<button class="ans shown" data-ans="${q.n}">Answer: ${esc(q.a)}</button>` : `<button class="ans" data-ans="${q.n}">Show answer</button>`;
   const noteOpen = openNotes.has(q.n) || p.note;
+  const open = views.has(q.n);
   return `<div class="row"><span class="num">#${q.n}</span>
     <div class="meta"><span class="skill">${esc(D.skills[q.s][1])}</span>
-      <small><span class="diff ${"EMH"[q.d]}">${DIFF[q.d]}</span><code>${q.id}</code><span title="${PDF[q.part]}">Part ${q.part}, p. ${q.page}</span>${ans}
+      <small><span class="diff ${"EMH"[q.d]}">${DIFF[q.d]}</span><code>${q.id}</code><span title="${PDF[q.part]}">Part ${q.part}, p. ${q.page}</span><button class="ans" data-view="${q.n}">${open ? "Hide question" : "Show question"}</button>${ans}
       ${noteOpen || !canWrite ? "" : `<button class="notebtn" data-note="${q.n}">Add note</button>`}</small></div>
+    ${open ? `<div class="view" data-slot="${q.n}"></div>` : ""}
     <div class="marks">${mk("c", "✓", "Correct")}${mk("m", "✕", "Missed")}${mk("f", "!", "Flag to review")}</div>
     ${noteOpen ? `<div class="note"><input id="note-${q.n}" data-n="${q.n}" value="${esc(p.note || "")}" placeholder="What tripped you up?" aria-label="Note for question ${q.n}"${canWrite ? "" : " readonly"}></div>` : ""}
   </div>`;
@@ -184,10 +196,15 @@ function render() {
   $("list").innerHTML = qs.length
     ? qs.slice(0, limit).map(rowHTML).join("") + (qs.length > limit ? `<button class="more" id="more">Show ${Math.min(60, qs.length - limit)} more of ${(qs.length - limit).toLocaleString()} remaining</button>` : "")
     : `<div class="empty">No questions match these filters.</div>`;
+  for (const slot of $("list").querySelectorAll("[data-slot]")) slot.replaceWith(views.get(+slot.dataset.slot));
 }
 
 $("list").addEventListener("click", async e => {
   if (e.target.id === "more") { limit += 60; render(); return }
+  const v = e.target.closest("[data-view]");
+  if (v) { const n = +v.dataset.view; views.has(n) ? views.delete(n) : views.set(n, buildView(Q.find(x => x.n === n))); render(); return }
+  const sb = e.target.closest("[data-sol]");
+  if (sb) { toggleSolution(sb); return }
   const a = e.target.closest("[data-ans]");
   if (a) { const n = +a.dataset.ans; shownAns.has(n) ? shownAns.delete(n) : shownAns.add(n); render(); return }
   const nb = e.target.closest("[data-note]");
@@ -220,6 +237,71 @@ async function save(n, next, quiet) {
       P[n] = prev; render();
     }).finally(() => { writing[n] = null });
   await writing[n];
+}
+
+// ---- Question viewer: renders the question's region straight from the source PDF ----
+const PAGE_W = 594.96, PAGE_H = 841.92, TOP = 4;
+const docs = {}, pageCache = new Map();
+function pdfDoc(part) {
+  if (!window.pdfjsLib) return Promise.reject(new Error("viewer library didn't load"));
+  return docs[part] ||= pdfjsLib.getDocument({ url: "pdf/" + PDF[part], disableAutoFetch: true, disableFontFace: true }).promise
+    .catch(err => { delete docs[part]; throw err });
+}
+async function pageBitmap(part, num, scale) {
+  const key = part + ":" + num + ":" + scale;
+  if (!pageCache.has(key)) {
+    pageCache.set(key, (async () => {
+      const page = await (await pdfDoc(part)).getPage(num);
+      const vp = page.getViewport({ scale });
+      const c = document.createElement("canvas");
+      c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+      return c;
+    })().catch(err => { pageCache.delete(key); throw err }));
+    if (pageCache.size > 24) pageCache.delete(pageCache.keys().next().value);
+  }
+  return pageCache.get(key);
+}
+// Slices between (p0, y0) and (p1, y1); continuation pages start at the top.
+function slices(part, p0, y0, p1, y1) {
+  const out = [];
+  for (let p = p0; p <= p1; p++) {
+    const a = p === p0 ? y0 : TOP, b = p === p1 ? y1 : PAGE_H;
+    if (b - a > 4) out.push([p, a, b]);
+  }
+  return out;
+}
+async function drawInto(sheet, part, segs) {
+  sheet.innerHTML = '<div class="msg">Loading from the PDF…</div>';
+  try {
+    const css = Math.min(sheet.clientWidth || 700, 760), scale = Math.min(3, css * (window.devicePixelRatio || 1) / PAGE_W);
+    const canvases = [];
+    for (const [p, a, b] of segs) {
+      const src = await pageBitmap(part, p, scale);
+      const c = document.createElement("canvas");
+      c.width = src.width; c.height = Math.max(1, Math.round((b - a) * scale));
+      c.getContext("2d").drawImage(src, 0, Math.round(a * scale), src.width, c.height, 0, 0, c.width, c.height);
+      canvases.push(c);
+    }
+    sheet.replaceChildren(...canvases);
+  } catch (err) {
+    sheet.innerHTML = '<div class="msg">Couldn\'t load this page from the PDF. Use the link above to open it directly.</div>';
+  }
+}
+function buildView(q) {
+  const el = document.createElement("div");
+  el.className = "view";
+  el.innerHTML = `<div class="vbar"><button class="btn" data-sol="${q.n}">Show solution</button>
+    <a href="pdf/${PDF[q.part]}#page=${q.page}" target="_blank" rel="noopener">Open in PDF, page ${q.page}</a></div>
+    <div class="sheet q"></div><div class="sheet s" hidden></div>`;
+  requestAnimationFrame(() => drawInto(el.querySelector(".sheet.q"), q.part, slices(q.part, q.page, q.qy, q.ap, q.ay)));
+  return el;
+}
+function toggleSolution(btn) {
+  const q = Q.find(x => x.n === +btn.dataset.sol), sheet = btn.closest(".view").querySelector(".sheet.s");
+  const show = sheet.hidden;
+  sheet.hidden = !show; btn.classList.toggle("on", show); btn.textContent = show ? "Hide solution" : "Show solution";
+  if (show && !sheet.dataset.drawn) { sheet.dataset.drawn = 1; drawInto(sheet, q.part, slices(q.part, q.ap, q.ay, q.ep, q.ey)) }
 }
 
 function setSync(t, warn) { const s = $("sync"); s.textContent = t; s.classList.toggle("warn", !!warn) }

@@ -13,6 +13,8 @@ PSAT/NMSQT & PSAT 10 Math question bank: 1,366 questions split across four PDFs.
 
 `questions.csv` lists every question: running number, College Board question ID,
 domain, skill, difficulty, correct answer, and the PDF and page it starts on.
+`q_y`, `ans_page`/`ans_y` and `end_page`/`end_y` mark where the question and its
+solution sit on the page (PDF points from the top), which the tracker uses to crop them.
 
 | Domain | Questions |
 | --- | --- |
@@ -27,12 +29,14 @@ Difficulty: 352 Easy, 448 Medium, 566 Hard. Question ID `af691219` appears twice
 ## Progress tracker
 
 `tracker/index.html` is a page for marking each question correct, missed, or
-flagged for review, with filters by domain, skill, difficulty and status. It is
-published as a claude.ai artifact and saves progress there.
+flagged for review, with filters by domain, skill, difficulty and status. Each
+question and its solution can be opened inline: the page renders that region of
+the source PDF with pdf.js. It is published as a claude.ai artifact, with the four
+PDFs alongside it under `pdf/`, and saves progress there.
 
 ## Regenerating
 
 ```sh
-python3 tools/index_pdfs.py     # PDFs -> questions.csv (needs poppler's pdftotext)
+python3 tools/index_pdfs.py     # PDFs -> questions.csv (needs PyMuPDF: pip install pymupdf)
 python3 tools/build_tracker.py  # questions.csv + tracker/template.html -> tracker/index.html
 ```

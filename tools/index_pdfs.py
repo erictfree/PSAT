@@ -1,39 +1,53 @@
-"""Build questions.csv from the four question-bank PDFs (needs poppler's pdftotext)."""
-import csv, glob, re, subprocess
+"""Build questions.csv from the four question-bank PDFs.
 
-FIELDS = ["n", "id", "domain", "skill", "difficulty", "answer", "part", "pdf", "page"]
+Needs PyMuPDF (pip install pymupdf). Besides each question's metadata, it records
+where the question and its solution sit in the PDF (page numbers and y offsets in
+PDF points), which the tracker uses to show them inline.
+"""
+import csv, glob, re
+import pymupdf
+
+FIELDS = ["n", "id", "domain", "skill", "difficulty", "answer", "part", "pdf", "page",
+          "q_y", "ans_page", "ans_y", "end_page", "end_y"]
+
+
+def header_columns(page, top):
+    """Domain and skill text from the metadata table under the 'Question ID' title."""
+    words = page.get_text("words")
+    labels = {w[4]: w for w in words if top < w[1] < top + 60 and w[4] in ("Domain", "Skill", "Difficulty")}
+    cd, cs, cf = labels["Domain"][0], labels["Skill"][0], labels["Difficulty"][0]
+    row_top = labels["Domain"][3] + 5
+    body = [w for w in words if row_top < w[1] < row_top + 70]
+    pick = lambda x0, x1: " ".join(w[4] for w in sorted(body, key=lambda w: (round(w[1]), w[0])) if x0 - 3 <= w[0] < x1 - 3)
+    return pick(cd, cs), pick(cs, cf)
+
 
 rows = []
 for part in [1, 2, 3, 4]:
     pdf = glob.glob(f"PSAT_Math_Part{part}_*.pdf")[0]
-    text = subprocess.run(["pdftotext", "-layout", pdf, "-"], capture_output=True, text=True, check=True).stdout
     cur = None
-    for page, pg in enumerate(text.split("\f"), 1):
-        lines = pg.split("\n")
-        for i, line in enumerate(lines):
-            m = re.search(r"Question ID ([0-9a-f]+)", line)
-            if m:
-                # Header row gives column positions for Domain / Skill / Difficulty.
-                hdr = next(j for j in range(i + 1, i + 4) if "Domain" in lines[j])
-                h = lines[hdr]
-                cd, cs, cf = h.index("Domain"), h.index("Skill"), h.index("Difficulty")
-                dom, sk = [], []
-                for k in range(hdr + 1, len(lines)):
-                    if "ID:" in lines[k]:
-                        break
-                    dom.append(lines[k][cd - 3:cs - 3].strip())
-                    sk.append(lines[k][cs - 3:cf - 3].strip())
-                cur = dict(n=len(rows) + 1, id=m.group(1), part=part, pdf=pdf, page=page,
-                           domain=" ".join(filter(None, dom)), skill=" ".join(filter(None, sk)),
-                           answer="", difficulty="")
+    for pn, page in enumerate(pymupdf.open(pdf), 1):
+        for b in sorted(page.get_text("blocks"), key=lambda b: b[1]):
+            t = b[4].strip()
+            if m := re.match(r"Question ID ([0-9a-f]+)$", t):
+                domain, skill = header_columns(page, b[1])
+                cur = dict(n=len(rows) + 1, id=m.group(1), domain=domain, skill=skill,
+                           answer="", difficulty="", part=part, pdf=pdf, page=pn)
                 rows.append(cur)
-            m = re.search(r"Correct Answer:\s*(.*)", line)
-            if m and cur and not cur["answer"]:
-                cur["answer"] = m.group(1).strip()
-            m = re.search(r"Question Difficulty:\s*(\w+)", line)
-            if m and cur and not cur["difficulty"]:
-                cur["difficulty"] = m.group(1)
+            elif not cur:
+                continue
+            elif re.match(r"ID: [0-9a-f]+ Answer$", t):
+                cur["ans_page"], cur["ans_y"] = pn, round(b[1] - 12, 1)  # clears the dark "Answer" header bar
+            elif re.match(r"ID: [0-9a-f]+$", t) and "q_y" not in cur:
+                cur["q_y"] = round(b[3] + 10, 1)  # clears the underline below the ID label
+            elif m := re.match(r"Correct Answer:\s*(.*)", t):
+                cur["answer"] = cur["answer"] or m.group(1).strip()
+            elif m := re.match(r"Question Difficulty:\s*(\w+)", t):
+                cur["difficulty"] = cur["difficulty"] or m.group(1)
+                cur["end_page"], cur["end_y"] = pn, round(b[3] + 6, 1)
 
+missing = [r["n"] for r in rows if any(k not in r for k in FIELDS)]
+assert not missing, f"incomplete rows: {missing[:10]}"
 with open("questions.csv", "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=FIELDS)
     w.writeheader()
