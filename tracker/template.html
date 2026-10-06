@@ -225,6 +225,7 @@ const writing = {};
 async function save(n, next, quiet) {
   const prev = P[n];
   P[n] = next; if (!quiet) render(); else renderSummary();
+  if (STORE === "local") { saveLocal(); return }
   if (!db) { setSync("Not connected — this mark won't be saved.", true); return }
   while (writing[n]) await writing[n];
   const q = Q.find(x => x.n === n);
@@ -308,7 +309,19 @@ function setSync(t, warn) { const s = $("sync"); s.textContent = t; s.classList.
 
 render();
 
-(async () => {
+// "local" builds (the public website) keep each visitor's progress in their own browser.
+const STORE = "__STORE__", LOCAL_KEY = "psat-math-progress-v1";
+function saveLocal() {
+  const out = {};
+  for (const [n, v] of Object.entries(P)) if (v && (v.st || v.note)) out[n] = v;
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(out)); setSync("Saved on this device") }
+  catch { setSync("This browser isn't letting the page save. Progress will be lost when you close it.", true) }
+}
+if (STORE === "local") {
+  try { Object.assign(P, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")) } catch {}
+  setSync("Progress saves on this device and browser.");
+  render();
+} else (async () => {
   const [d, u] = window.claude ? await Promise.all([claude.use("db"), claude.use("user")]) : [null, null];
   if (!d) { setSync("Progress can't load here. Open the tracker on claude.ai while signed in.", true); return }
   db = d;
